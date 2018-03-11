@@ -63,6 +63,13 @@ let State = {
 		return newState;
 	},
 
+	update(key) {
+		let actors = this.actors.map(actor => actor.update(key, this));
+		let newState = Object.create(State);
+		newState.init(this.level, actors, this.status);
+		return newState;
+	},
+
 	get player() {
 		return this.actors.find(a => a.type === 'player');
 	}
@@ -79,6 +86,24 @@ let Player = {
 		return newPlayer;		
 	},
 
+	update(key, state) {
+		let newPlayer;
+		let move = Object.create(Vec);
+		if (key === 'ArrowLeft') {
+			move.init(-1,0);
+		} else if (key === 'ArrowRight') {
+			move.init(1,0);
+		} else if (key === 'ArrowUp') {
+			move.init(0,-1);
+		} else {
+			move.init(0,1);
+		}
+		newPlayer = this.create(this.pos.plus(move));
+		// if player's new position touches the wall, don't update
+		
+		return newPlayer;
+	},
+
 	type: 'player'
 };
 
@@ -93,32 +118,23 @@ let Box = {
 		return newBox;		
 	},
 
+	update(key, status) {
+		return this;
+	},
+
 	type: 'box'
-};
-
-let Hole = {
-	init(pos) {
-		this.pos = pos;
-	},
-
-	create(pos) {
-		let newHole = Object.create(Hole);
-		newHole.init(pos);
-		return newHole;		
-	},
-
-	type: 'hole'
 };
 
 const gameChars = {
 	'.': 'floor',
 	'#': 'wall',
+	'O': 'hole',
 	'@': Player,
-	'=': Box,
-	'O': Hole
+	'=': Box
+	
 };
 
-const scale = 50;
+const scale = 40;
 
 let CanvasDisplay = {
 	init(parent, level) {
@@ -142,8 +158,11 @@ let CanvasDisplay = {
 				let posY = y * scale;
 				if (tile === 'floor') {
 					this.cx.drawImage(floor, posX, posY, scale, scale);
-				} else { // background has either floor or wall.
+				} else if (tile === 'wall') { 
 					this.cx.drawImage(wall, posX, posY, scale, scale);
+				} else {
+					this.cx.drawImage(floor, posX, posY, scale, scale); // Background of hole image has white content.
+					this.cx.drawImage(hole, posX, posY, scale, scale);
 				}
 			})
 		});
@@ -155,13 +174,22 @@ let CanvasDisplay = {
 			let posY = actor.pos.y * scale;
 			if (actor.type === 'player') {
 				this.cx.drawImage(rightFig, posX, posY, scale, scale);
-			} else if (actor.type === 'box') {
-				this.cx.drawImage(box, posX, posY, scale, scale);
 			} else {
-				this.cx.drawImage(hole, posX, posY, scale, scale);
+				this.cx.drawImage(box, posX, posY, scale, scale);
 			}
 		})	
 	}
+}
+
+function runLevel(stage) {
+	let level = Object.create(Level);
+	level.init(gameLevel[stage]);
+	console.log(level);
+	state = State.start(level);
+	console.log(state);
+	canvasDis = Object.create(CanvasDisplay);
+	canvasDis.init(document.body, level);
+	canvasDis.setState(state);
 }
 
 let box = document.createElement('img');
@@ -183,22 +211,28 @@ rightFig.src = 'image/right.png';
 upFig.src = 'image/up.png';
 downFig.src = 'image/down.png';
 
-let level = Object.create(Level);
-level.init(gameLevel[0]);
-console.log(level);
-let state = State.start(level);
-console.log(state);
-let canvasDis = Object.create(CanvasDisplay);
-canvasDis.init(document.body, level);
+const validKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
 
+let state;
+let canvasDis;
+let stage = 0;
 
-// floor.addEventListener('load', (event) => {
+window.addEventListener('keydown', (event) => {
+	if (validKeys.includes(event.key)) {
+		state = state.update(event.key);
+		canvasDis.setState(state);
+		if (state.status === 'finish') {
+			if (stage === gameLevel.length) {
+				alert('Congrats! You have finished all the stages.');
+			} else {
+				runLevel(++stage);
+			}
+		}
+	}
+})
 
-// 	canvasDis.setState(state);
-// });
-
-setInterval(function () {
-	canvasDis.setState(state);
-}, 100);
+window.onload = () => {
+	runLevel(0);
+}
 
 
