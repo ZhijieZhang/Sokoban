@@ -47,6 +47,13 @@ let Level = {
     		return 'floor'; // I want to draw actors separatly
     	})
     });
+	},
+
+	touch(pos, type) {
+		if (this.rows[pos.y][pos.x] === type) {
+			return true;
+		}
+		return false;
 	}
 };
 
@@ -76,31 +83,38 @@ let State = {
 };
 
 let Player = {
-	init(pos) {
+	init(pos, direction) {
 		this.pos = pos;
+		this.direction = direction;
 	},
 
-	create(pos) {
+	create(pos, direction = 'down') {
 		let newPlayer = Object.create(Player);
-		newPlayer.init(pos);
+		newPlayer.init(pos, direction);
 		return newPlayer;		
 	},
 
 	update(key, state) {
-		let newPlayer;
+		let newPlayer, direction, newPos;
 		let move = Object.create(Vec);
 		if (key === 'ArrowLeft') {
 			move.init(-1,0);
+			direction = 'left';
 		} else if (key === 'ArrowRight') {
 			move.init(1,0);
+			direction = 'right';
 		} else if (key === 'ArrowUp') {
 			move.init(0,-1);
+			direction = 'up';
 		} else {
 			move.init(0,1);
+			direction = 'down';
 		}
-		newPlayer = this.create(this.pos.plus(move));
-		// if player's new position touches the wall, don't update
-		
+		newPos = this.pos.plus(move);
+		newPlayer = this.create(newPos, direction);
+		// If player's new position hits the wall, don't move player.
+		if (state.level.touch(newPos, 'wall'))
+			return this.create(this.pos, direction);
 		return newPlayer;
 	},
 
@@ -173,7 +187,15 @@ let CanvasDisplay = {
 			let posX = actor.pos.x * scale;
 			let posY = actor.pos.y * scale;
 			if (actor.type === 'player') {
-				this.cx.drawImage(rightFig, posX, posY, scale, scale);
+				// Use different images based on the direction of play is facing.
+				if (actor.direction === 'left')
+					this.cx.drawImage(leftFig, posX, posY, scale, scale);
+				else if (actor.direction === 'right') 
+					this.cx.drawImage(rightFig, posX, posY, scale, scale);
+				else if (actor.direction === 'up')
+					this.cx.drawImage(upFig, posX, posY, scale, scale);
+				else
+					this.cx.drawImage(downFig, posX, posY, scale, scale);
 			} else {
 				this.cx.drawImage(box, posX, posY, scale, scale);
 			}
