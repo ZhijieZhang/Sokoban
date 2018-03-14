@@ -8,6 +8,8 @@ const gameLevel = [
 	 .......###....
 	 ..............`
 ];
+const validKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+const scale = 40;
 
 let Vec = {
 	init(x, y) {
@@ -74,7 +76,30 @@ let State = {
 		let actors = this.actors.map(actor => actor.update(key, this));
 		let newState = Object.create(State);
 		newState.init(this.level, actors, this.status);
+		let newPlayer = newState.player;
+		for (let actor of actors) {
+			if (actor !== newPlayer && this.overlap(actor, newPlayer)) {
+				console.log('hit');
+				let stateBeforeMove = newState;
+				newState = actor.move(newState);
+				// newState didn't change after we tried to move the box,
+				// which means the box hits a wall. Therefore we return the original
+				// state (the state before player moves)
+				if (newState === stateBeforeMove) return this;
+			}
+		}
+		// Check if all the boxes are in holes.
+		let allInHoles = newState.actors.every(actor => {
+			if (actor === newPlayer) return true;
+			return actor.state === 'inHole';
+		});
+		if (allInHoles) 
+			newState.init(newState.level, newState.actors, 'finish');
 		return newState;
+	},
+
+	overlap(actor1, actor2) {
+		return actor1.pos.x === actor2.pos.x && actor1.pos.y === actor2.pos.y;
 	},
 
 	get player() {
@@ -122,18 +147,48 @@ let Player = {
 };
 
 let Box = {
-	init(pos) {
+	init(pos, state) { // state for a box: in hole or not.
 		this.pos = pos;
+		this.state = state; 
 	},
 
-	create(pos) {
+	create(pos, state = 'notInHole') {
 		let newBox = Object.create(Box);
-		newBox.init(pos);
+		newBox.init(pos, state);
 		return newBox;		
 	},
 
-	update(key, status) {
+	update(key, status) { // A box itself won't update, it can only be moved by a player.
 		return this;
+	},
+
+	move(state) {
+		let direction = state.player.direction;
+		let newPos, newBox;
+		let move = Object.create(Vec);
+		let newState = Object.create(State);
+		if (direction === 'left') {
+			move.init(-1, 0);
+		} else if (direction === 'right') {
+			move.init(1, 0);
+		} else if (direction === 'up') {
+			move.init(0, -1);
+		} else {
+			move.init(0, 1);
+		}
+		newPos = this.pos.plus(move);
+		if (state.level.touch(newPos, 'wall'))
+			return state;
+		if (state.level.touch(newPos, 'hole')) 
+			newBox = this.create(newPos, 'inHole');
+		else
+			newBox = this.create(newPos);
+		let newActors = state.actors.map(actor => {
+			if (actor === this) return newBox;
+			return actor;
+		});
+		newState.init(state.level, newActors, state.status);
+		return newState;
 	},
 
 	type: 'box'
@@ -145,10 +200,7 @@ const gameChars = {
 	'O': 'hole',
 	'@': Player,
 	'=': Box
-	
 };
-
-const scale = 40;
 
 let CanvasDisplay = {
 	init(parent, level) {
@@ -196,19 +248,24 @@ let CanvasDisplay = {
 					this.cx.drawImage(upFig, posX, posY, scale, scale);
 				else
 					this.cx.drawImage(downFig, posX, posY, scale, scale);
-			} else {
-				this.cx.drawImage(box, posX, posY, scale, scale);
+			} else { // Actor is box. Draw it based on its state
+				if (actor.state === 'notInHole')
+					this.cx.drawImage(box, posX, posY, scale, scale);
+				else 
+					this.cx.drawImage(boxIn, posX, posY, scale, scale);
 			}
 		})	
+	},
+
+	clear(parent, element) {
+		parent.removeChild(element);
 	}
 }
 
 function runLevel(stage) {
 	let level = Object.create(Level);
 	level.init(gameLevel[stage]);
-	console.log(level);
 	state = State.start(level);
-	console.log(state);
 	canvasDis = Object.create(CanvasDisplay);
 	canvasDis.init(document.body, level);
 	canvasDis.setState(state);
@@ -233,28 +290,30 @@ rightFig.src = 'image/right.png';
 upFig.src = 'image/up.png';
 downFig.src = 'image/down.png';
 
-const validKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
-
 let state;
 let canvasDis;
 let stage = 0;
 
-window.addEventListener('keydown', (event) => {
+function update(event) {
 	if (validKeys.includes(event.key)) {
 		state = state.update(event.key);
 		canvasDis.setState(state);
 		if (state.status === 'finish') {
-			if (stage === gameLevel.length) {
-				alert('Congrats! You have finished all the stages.');
+			if (stage === gameLevel.length-1) {
+				window.removeEventListener('keydown', update);
+				setTimeout(() => alert('Congrats! You have finished all the Levels.'), 0);
 			} else {
+				canvasDis.clear(document.body, canvasDis.canvas);
 				runLevel(++stage);
 			}
 		}
 	}
-})
+}
+
+window.addEventListener('keydown', update);
 
 window.onload = () => {
-	runLevel(0);
+	runLevel(0); 
 }
 
 
