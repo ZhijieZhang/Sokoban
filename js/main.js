@@ -1,16 +1,3 @@
-const gameLevel = [
-	`..............
-	 ....######....
-	 ....#@...#....
-	 ....####=#....
-	 .......#.#....
-	 .......#O#....
-	 .......###....
-	 ..............`
-];
-const validKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
-const scale = 40;
-
 let Vec = {
 	init(x, y) {
 		this.x = x;
@@ -31,32 +18,35 @@ let Vec = {
 }
 
 let Level = {
-	init(plan) {
-    let rows = plan.split('\n').map(row => row.trim()).map(row => [...row]);
-    this.width = rows[0].length;
-    this.height = rows.length;
-    this.actors = []; // Player, box, or hole.
-    this.rows = rows.map((row, y) => {
-    	return row.map((ch, x) => {
-    		let gameChar = gameChars[ch];
-    		if (typeof gameChar === 'string') // This char is either 'empty' or 'wall'
-    			return gameChar;
-        // Either a player, a box, or a hole. 
-        // Making them as objects is because their states can change during the game
-        let position = Object.create(Vec);
-        position.init(x, y);
-    		this.actors.push(gameChar.create(position));
-    		return 'floor'; // I want to draw actors separatly
-    	})
-    });
-	},
+  init(plan) {
+  let rows = plan.split('\n').map(row => row.trim()).map(row => [...row]);
+  this.width = rows[0].length;
+  this.height = rows.length;
+  this.actors = []; // Player, box, or hole.
+  this.rows = rows.map((row, y) => {
+  return row.map((ch, x) => {
+  		let gameChar = gameChars[ch];
+  		if (typeof gameChar === 'string') // This char is either 'empty' or 'wall'
+  			return gameChar;
+      // Either a player, a box, or a hole. 
+      // Making them as objects is because their states can change during the game
+      let position = Object.create(Vec);
+      position.init(x, y);
+      let actor = gameChar.create(position);
+  		this.actors.push(actor);
+  		if (actor.type === 'box' && actor.state === 'inHole')
+  			return 'hole';
+  		return 'floor';
+  	})
+  });
+  },
 
-	touch(pos, type) {
-		if (this.rows[pos.y][pos.x] === type) {
-			return true;
-		}
-		return false;
-	}
+  touch(pos, type) {
+  	if (this.rows[pos.y][pos.x] === type) {
+  		return true;
+  	}
+  	return false;
+  }
 };
 
 let State = {
@@ -78,8 +68,7 @@ let State = {
 		newState.init(this.level, actors, this.status);
 		let newPlayer = newState.player;
 		for (let actor of actors) {
-			if (actor !== newPlayer && this.overlap(actor, newPlayer)) {
-				console.log('hit');
+			if (actor !== newPlayer && this.overlap(actor.pos, newPlayer.pos)) {
 				let stateBeforeMove = newState;
 				newState = actor.move(newState);
 				// newState didn't change after we tried to move the box,
@@ -98,8 +87,8 @@ let State = {
 		return newState;
 	},
 
-	overlap(actor1, actor2) {
-		return actor1.pos.x === actor2.pos.x && actor1.pos.y === actor2.pos.y;
+	overlap(pos1, pos2) {
+		return pos1.x === pos2.x && pos1.y === pos2.y;
 	},
 
 	get player() {
@@ -179,6 +168,8 @@ let Box = {
 		newPos = this.pos.plus(move);
 		if (state.level.touch(newPos, 'wall'))
 			return state;
+		if (state.actors.some(actor => state.overlap(actor.pos, newPos)))
+			return state;
 		if (state.level.touch(newPos, 'hole')) 
 			newBox = this.create(newPos, 'inHole');
 		else
@@ -194,19 +185,17 @@ let Box = {
 	type: 'box'
 };
 
-const gameChars = {
-	'.': 'floor',
-	'#': 'wall',
-	'O': 'hole',
-	'@': Player,
-	'=': Box
-};
+let BoxInHole = {
+	create(pos) {
+		return Box.create(pos, 'inHole');
+	}
+}
 
 let CanvasDisplay = {
 	init(parent, level) {
 		this.canvas = document.createElement('canvas');
-		this.canvas.width = Math.min(1000, level.width * scale);
-		this.canvas.height = Math.min(800, level.height * scale);
+		this.canvas.width = level.width * scale;
+		this.canvas.height = level.height * scale;
 		this.cx = this.canvas.getContext('2d');
 		parent.appendChild(this.canvas);
 	},
@@ -262,6 +251,19 @@ let CanvasDisplay = {
 	}
 }
 
+let state;
+let canvasDis;
+let stage = 0;
+const gameChars = {
+	'.': 'floor',
+	'#': 'wall',
+	'O': 'hole',
+	'@': Player,
+	'=': Box,
+	'+': BoxInHole,
+};
+const scale = 32;
+
 function runLevel(stage) {
 	let level = Object.create(Level);
 	level.init(gameLevel[stage]);
@@ -271,41 +273,21 @@ function runLevel(stage) {
 	canvasDis.setState(state);
 }
 
-let box = document.createElement('img');
-let boxIn = document.createElement('img');
-let floor = document.createElement('img');
-let wall = document.createElement('img');
-let hole = document.createElement('img');
-let leftFig = document.createElement('img');
-let rightFig = document.createElement('img');
-let upFig = document.createElement('img');
-let downFig = document.createElement('img');
-box.src = 'image/box.png';
-boxIn.src = 'image/box_inhole.png';
-floor.src = 'image/floor.png'
-wall.src = 'image/wall.png';
-hole.src = 'image/hole.png';
-leftFig.src = 'image/left.png';
-rightFig.src = 'image/right.png';
-upFig.src = 'image/up.png';
-downFig.src = 'image/down.png';
-
-let state;
-let canvasDis;
-let stage = 0;
-
 function update(event) {
-	if (validKeys.includes(event.key)) {
-		state = state.update(event.key);
-		canvasDis.setState(state);
-		if (state.status === 'finish') {
-			if (stage === gameLevel.length-1) {
-				window.removeEventListener('keydown', update);
-				setTimeout(() => alert('Congrats! You have finished all the Levels.'), 0);
-			} else {
+	state = state.update(event.key);
+	canvasDis.setState(state);
+	if (state.status === 'finish') {
+		if (stage === gameLevel.length-1) {
+			window.removeEventListener('keydown', update);
+			setTimeout(() => alert('Congrats! You have finished all the Levels.'), 0);
+		} else {
+			// I set a timeout before the next level starts,
+			// so that the user can see all the boxes are in holes for a short time
+			// feel be proud(?) of that
+			setTimeout(() => {
 				canvasDis.clear(document.body, canvasDis.canvas);
 				runLevel(++stage);
-			}
+			}, 500);
 		}
 	}
 }
@@ -313,7 +295,7 @@ function update(event) {
 window.addEventListener('keydown', update);
 
 window.onload = () => {
-	runLevel(0); 
+	runLevel(stage); // stage is initially 0
 }
 
 
