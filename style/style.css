@@ -1,0 +1,46 @@
+* {
+	margin: 0;
+	padding: 0;
+}
+
+html, body {
+	height: 100%;
+	font-family: 'Mina', sans-serif;
+}
+
+body {
+	display: flex;
+ 	flex-direction: column;
+ 	justify-content: center;
+	align-items: center;
+	background-color: #f9efd1;
+}
+
+h1 {
+	color: #8e7b40;
+}
+
+.fa-undo-alt, .fa-question, .fa-keyboard {
+	color: #bf9c56;
+	transition: transform 0.7s ease;
+	margin: 15px;
+}
+
+.fa-undo-alt:hover, .fa-question:hover, .fa-keyboard:hover {
+	transform: rotate(360deg);
+	cursor: pointer;
+}
+
+#help-info, #goto-level{
+	display: none;
+	margin: 15px;
+	background: white;
+	border-radius: 20px;
+	padding: 20px;
+	color: #bf9c56;
+}
+
+#help-info .fa-undo-alt, #help-info .fa-keyboard{
+	margin: 0px;
+}
+

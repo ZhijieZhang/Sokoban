@@ -1,11 +1,40 @@
 <!DOCTYPE html>
 <html>
+
 <head>
+	<link href="https://fonts.googleapis.com/css?family=Mina" rel="stylesheet">
+	<link rel="stylesheet" type="text/css" href="./style/style.css">
+	<script defer src="https://use.fontawesome.com/releases/v5.0.8/js/all.js" integrity="sha384-SlE991lGASHoBfWbelyBPLsUlwY1GwNDJo3jSJO04KZ33K2bwfV9YBauFfnzvynJ" crossorigin="anonymous"></script>
+	<script src="https://code.jquery.com/jquery-3.3.1.min.js"
+  integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+  crossorigin="anonymous"></script>
 	<title>Sokoban</title>
 </head>
+
 <body>
+	<h1>Sokoban</h1>
+	<div id="buttons">
+		<span id="undo">
+			<i class="fas fa-undo-alt fa-lg"></i>
+		</span>
+		<span id="help">
+			<i class="fas fa-question fa-lg"></i>
+		</span>
+		<span id="goto">
+			<i class="far fa-keyboard fa-lg"></i>
+		</span>
+	</div>
+	<div id="help-info">
+		<p>Use &uarr; &darr; &larr; &rarr; to move the figure, click <i class="fas fa-undo-alt"></i> to undo, click <i class="far fa-keyboard"></i> to go to other levels</p><br>
+		<p>Goal: move all the boxes into holes</p>
+	</div>
+	<div id="goto-level">
+		<input type="text" placeholder="Please enter 0 - 6">
+	</div>
+	<div id="game"></div>
+	<script src='./js/level/gameLevels.js'></script>
+	<script src='./js/image/image.js'></script>
+	<script src='./js/main.js'></script>
 </body>
-<script src='./js/level/gameLevels.js'></script>
-<script src='./js/image/image.js'></script>
-<script src='./js/main.js'></script>
+
 </html>

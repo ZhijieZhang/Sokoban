@@ -120,7 +120,7 @@ let Player = {
 		} else if (key === 'ArrowUp') {
 			move.init(0,-1);
 			direction = 'up';
-		} else {
+		} else if (key === 'ArrowDown') {
 			move.init(0,1);
 			direction = 'down';
 		}
@@ -162,7 +162,7 @@ let Box = {
 			move.init(1, 0);
 		} else if (direction === 'up') {
 			move.init(0, -1);
-		} else {
+		} else if (direction === 'down') {
 			move.init(0, 1);
 		}
 		newPos = this.pos.plus(move);
@@ -253,7 +253,13 @@ let CanvasDisplay = {
 
 let state;
 let canvasDis;
+let undos;
 let stage = 0;
+let gameDiv = document.querySelector('#game');
+let undoIcon = document.querySelector('#undo');
+let helpIcon = document.querySelector('#help');
+let gotoIcon = document.querySelector('#goto');
+let input = document.querySelector('input');
 const gameChars = {
 	'.': 'floor',
 	'#': 'wall',
@@ -262,18 +268,22 @@ const gameChars = {
 	'=': Box,
 	'+': BoxInHole,
 };
-const scale = 32;
+const validMoveKeys = ['ArrowLeft', 'ArrowUp', 'ArrowDown', 'ArrowRight'];
+const scale = 40;
 
 function runLevel(stage) {
+	undos = [];
 	let level = Object.create(Level);
 	level.init(gameLevel[stage]);
 	state = State.start(level);
 	canvasDis = Object.create(CanvasDisplay);
-	canvasDis.init(document.body, level);
+	canvasDis.init(gameDiv, level);
 	canvasDis.setState(state);
 }
 
 function update(event) {
+	if (!validMoveKeys.includes(event.key)) return;
+	undos.push(state);
 	state = state.update(event.key);
 	canvasDis.setState(state);
 	if (state.status === 'finish') {
@@ -285,17 +295,48 @@ function update(event) {
 			// so that the user can see all the boxes are in holes for a short time
 			// feel be proud(?) of that
 			setTimeout(() => {
-				canvasDis.clear(document.body, canvasDis.canvas);
+				canvasDis.clear(gameDiv, canvasDis.canvas);
 				runLevel(++stage);
 			}, 500);
 		}
 	}
 }
 
+function undo(event) {
+	if (undos.length !== 0) {
+		state = undos.pop();
+		canvasDis.setState(state);
+	}
+}
+
+function toggleHelpInfo(event) {
+	$('#help-info').fadeToggle('3000');
+}
+
+function toggleGoto(event) {
+	$('#goto-level').fadeToggle('2000');
+}
+
+function gotoOtherLevel(event) {
+	if (event.key === 'Enter') {
+		let level = event.target.value;
+		if (level >= 0 && level < gameLevel.length) {
+			canvasDis.clear(gameDiv, canvasDis.canvas);
+			runLevel(level);
+			toggleGoto();
+		}
+	}
+}
+
 window.addEventListener('keydown', update);
+undoIcon.addEventListener('click', undo);
+helpIcon.addEventListener('click', toggleHelpInfo);
+gotoIcon.addEventListener('click', toggleGoto);
+input.addEventListener('keydown', gotoOtherLevel);
 
 window.onload = () => {
 	runLevel(stage); // stage is initially 0
 }
+
 
 
