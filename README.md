@@ -1,5 +1,4 @@
 # Sokoban
-## Introduction
 A version of sokoban that is implemented using javascript and html5 canvas.
 
 Play: http://sokobanjs.s3-website-us-west-1.amazonaws.com/ 
