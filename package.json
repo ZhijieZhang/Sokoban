@@ -1,0 +1,25 @@
+{
+  "name": "Sokoban",
+  "version": "1.0.0",
+  "description": "A version of sokoban that is implemented using javascript and html5 canvas.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "server": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ZhijieZhang/Sokoban.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ZhijieZhang/Sokoban/issues"
+  },
+  "homepage": "https://github.com/ZhijieZhang/Sokoban#readme",
+  "devDependencies": {
+    "express": "^4.16.3",
+    "nodemon": "^1.18.4"
+  }
+}
